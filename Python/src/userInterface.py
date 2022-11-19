@@ -1,8 +1,12 @@
+"""
+
+This is the top of the TS2DB 
+"""
 from fastapi import FastAPI
 
 app = FastAPI()
 
-userI
+
 @app.get("/login")
 def login():
     """
@@ -29,4 +33,4 @@ def sql_request():
     """
     Handle all SQL requests here!
     """
-    return("Hello": "sql")
+    return{"Hello": "sql"}
