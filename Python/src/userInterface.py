@@ -22,14 +22,14 @@ def logout():
     return {"Hello": "logout"}
 
 @app.post("/graphQL")
-def graphQL_request():
+def graphQL_request(gqlreq):
     """
     Start all GraphQL operations here.
     """
     return {"Hello": "graphQL"}
 
 @app.post("/sql")
-def sql_request():
+def sql_request(sqlreq):
     """
     Handle all SQL requests here!
     """
