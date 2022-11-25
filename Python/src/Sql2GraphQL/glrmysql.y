@@ -3,6 +3,9 @@
  * Copyright (c) 2009, Taughannock Networks. All rights reserved.
  * See the README file for license conditions and contact info.
  * $Header: /home/johnl/flnb/code/sql/RCS/glrmysql.y,v 2.1 2009/11/08 02:53:39 johnl Exp $
+ *
+ * Modified by Charles Wegrzyn to make it create GraphQL from SQL.
+ * Nov 25, 2022
  */
 /*
  * Parser for mysql subset, GLR version
