@@ -18,25 +18,16 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include "sqlbits.h"
 
+
+int yylex(void);
 void yyerror(const char *s, ...);
 void emit(char *s, ...);
 
-#define  SELECTOPS_INIT         00
-#define  SELECTOPS_ALL	        01
-#define  SELECTOPS_DISTINCY     02
-#define  SELECTOPS_DISTROW      04
-#define  SELECTOPS_HPRI        010
-#define  SELECTOPS_SJOIN       020
-#define  SELECTOPS_SMALLR      040
-#define  SELECTOPS_BIGRST     0100
-#define  SELECTOPS_CFROWS     0200
-
-
-
 %}
 
-
+	 /* yyval */
 %union {
 	int intval;
 	double floatval;
@@ -376,14 +367,14 @@ column_list: NAME { emit("COLUMN %s", $1); free($1); $$ = 1; }
   ;
 
 select_opts:                      { $$ = SELECTOPS_INIT; }
-| select_opts ALL                 { if($$ & SELECTOPS_ALL) yyerror("duplicate ALL option"); $$ = $1 | 01; }
-| select_opts DISTINCT            { if($$ & SELECTOPS_DISTINCY) yyerror("duplicate DISTINCT option"); $$ = $1 | 02; }
-| select_opts DISTINCTROW         { if($$ & SELECTOPS_DISTROW) yyerror("duplicate DISTINCTROW option"); $$ = $1 | 04; }
-| select_opts HIGH_PRIORITY       { if($$ & SELECTOPS_HPRI) yyerror("duplicate HIGH_PRIORITY option"); $$ = $1 | 010; }
-| select_opts STRAIGHT_JOIN       { if($$ & SELECTOPS_SJOIN) yyerror("duplicate STRAIGHT_JOIN option"); $$ = $1 | 020; }
-| select_opts SQL_SMALL_RESULT    { if($$ & SELECTOPS_SMALLR) yyerror("duplicate SQL_SMALL_RESULT option"); $$ = $1 | 040; }
-| select_opts SQL_BIG_RESULT      { if($$ & SELECTOPS_BIGRST) yyerror("duplicate SQL_BIG_RESULT option"); $$ = $1 | 0100; }
-| select_opts SQL_CALC_FOUND_ROWS { if($$ & SELECTOPS_CFROWS) yyerror("duplicate SQL_CALC_FOUND_ROWS option"); $$ = $1 | 0200; }
+| select_opts ALL                 { if($$ & SELECTOPS_ALL) yyerror("duplicate ALL option"); $$ = $1 | SELECTOPS_ALL; }
+| select_opts DISTINCT            { if($$ & SELECTOPS_DISTINCY) yyerror("duplicate DISTINCT option"); $$ = $1 | SELECTOPS_DISTINCY; }
+| select_opts DISTINCTROW         { if($$ & SELECTOPS_DISTROW) yyerror("duplicate DISTINCTROW option"); $$ = $1 | SELECTOPS_DISTROW; }
+| select_opts HIGH_PRIORITY       { if($$ & SELECTOPS_HPRI) yyerror("duplicate HIGH_PRIORITY option"); $$ = $1 | SELECTOPS_HPRI; }
+| select_opts STRAIGHT_JOIN       { if($$ & SELECTOPS_SJOIN) yyerror("duplicate STRAIGHT_JOIN option"); $$ = $1 | SELECTOPS_SJOIN; }
+| select_opts SQL_SMALL_RESULT    { if($$ & SELECTOPS_SMALLR) yyerror("duplicate SQL_SMALL_RESULT option"); $$ = $1 | SELECTOPS_SMALLR; }
+| select_opts SQL_BIG_RESULT      { if($$ & SELECTOPS_BIGRST) yyerror("duplicate SQL_BIG_RESULT option"); $$ = $1 | SELECTOPS_BIGRST; }
+| select_opts SQL_CALC_FOUND_ROWS { if($$ & SELECTOPS_CFROWS) yyerror("duplicate SQL_CALC_FOUND_ROWS option"); $$ = $1 | SELECTOPS_CFROWS; }
     ;
 
 select_expr_list: select_expr { $$ = 1; }
@@ -795,8 +786,8 @@ set_expr:
 
    /**** expressions ****/
 
-expr: NAME          { emit("NAME %s", $1); free($1); }
-   | USERVAR         { emit("USERVAR %s", $1); free($1); }
+expr: NAME         { emit("NAME %s", $1); free($1); }
+   | USERVAR       { emit("USERVAR %s", $1); free($1); }
    | NAME '.' NAME { emit("FIELDNAME %s.%s", $1, $3); free($1); free($3); }
    | STRING        { emit("STRING %s", $1); free($1); }
    | INTNUM        { emit("NUMBER %d", $1); }
