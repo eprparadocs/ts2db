@@ -21,6 +21,19 @@
 
 void yyerror(const char *s, ...);
 void emit(char *s, ...);
+
+#define  SELECTOPS_INIT         00
+#define  SELECTOPS_ALL	        01
+#define  SELECTOPS_DISTINCY     02
+#define  SELECTOPS_DISTROW      04
+#define  SELECTOPS_HPRI        010
+#define  SELECTOPS_SJOIN       020
+#define  SELECTOPS_SMALLR      040
+#define  SELECTOPS_BIGRST     0100
+#define  SELECTOPS_CFROWS     0200
+
+
+
 %}
 
 
@@ -362,15 +375,15 @@ column_list: NAME { emit("COLUMN %s", $1); free($1); $$ = 1; }
   | column_list ',' NAME  { emit("COLUMN %s", $3); free($3); $$ = $1 + 1; }
   ;
 
-select_opts:                          { $$ = 0; }
-| select_opts ALL                 { if($$ & 01) yyerror("duplicate ALL option"); $$ = $1 | 01; }
-| select_opts DISTINCT            { if($$ & 02) yyerror("duplicate DISTINCT option"); $$ = $1 | 02; }
-| select_opts DISTINCTROW         { if($$ & 04) yyerror("duplicate DISTINCTROW option"); $$ = $1 | 04; }
-| select_opts HIGH_PRIORITY       { if($$ & 010) yyerror("duplicate HIGH_PRIORITY option"); $$ = $1 | 010; }
-| select_opts STRAIGHT_JOIN       { if($$ & 020) yyerror("duplicate STRAIGHT_JOIN option"); $$ = $1 | 020; }
-| select_opts SQL_SMALL_RESULT    { if($$ & 040) yyerror("duplicate SQL_SMALL_RESULT option"); $$ = $1 | 040; }
-| select_opts SQL_BIG_RESULT      { if($$ & 0100) yyerror("duplicate SQL_BIG_RESULT option"); $$ = $1 | 0100; }
-| select_opts SQL_CALC_FOUND_ROWS { if($$ & 0200) yyerror("duplicate SQL_CALC_FOUND_ROWS option"); $$ = $1 | 0200; }
+select_opts:                      { $$ = SELECTOPS_INIT; }
+| select_opts ALL                 { if($$ & SELECTOPS_ALL) yyerror("duplicate ALL option"); $$ = $1 | 01; }
+| select_opts DISTINCT            { if($$ & SELECTOPS_DISTINCY) yyerror("duplicate DISTINCT option"); $$ = $1 | 02; }
+| select_opts DISTINCTROW         { if($$ & SELECTOPS_DISTROW) yyerror("duplicate DISTINCTROW option"); $$ = $1 | 04; }
+| select_opts HIGH_PRIORITY       { if($$ & SELECTOPS_HPRI) yyerror("duplicate HIGH_PRIORITY option"); $$ = $1 | 010; }
+| select_opts STRAIGHT_JOIN       { if($$ & SELECTOPS_SJOIN) yyerror("duplicate STRAIGHT_JOIN option"); $$ = $1 | 020; }
+| select_opts SQL_SMALL_RESULT    { if($$ & SELECTOPS_SMALLR) yyerror("duplicate SQL_SMALL_RESULT option"); $$ = $1 | 040; }
+| select_opts SQL_BIG_RESULT      { if($$ & SELECTOPS_BIGRST) yyerror("duplicate SQL_BIG_RESULT option"); $$ = $1 | 0100; }
+| select_opts SQL_CALC_FOUND_ROWS { if($$ & SELECTOPS_CFROWS) yyerror("duplicate SQL_CALC_FOUND_ROWS option"); $$ = $1 | 0200; }
     ;
 
 select_expr_list: select_expr { $$ = 1; }
@@ -635,7 +648,11 @@ stmt: create_table_stmt { emit("STMT"); }
    ;
 
 create_table_stmt: CREATE opt_temporary TABLE opt_if_not_exists NAME
-   '(' create_col_list ')' { emit("CREATE %d %d %d %s", $2, $4, $7, $5); free($5); }
+   '(' create_col_list ')' {  if( $4 ) {
+				 emit("If nor exists $s", $5);
+			      }
+			      emit("CREATE %d %d %s", $2, $7, $5);
+			      free($5); }
    ;
 
 create_table_stmt: CREATE opt_temporary TABLE opt_if_not_exists NAME '.' NAME
@@ -902,7 +919,7 @@ expr: BINARY expr %prec UMINUS { emit("STRTOBIN"); }
 void
 emit(char *s, ...)
 {
-  extern yylineno;
+  extern int yylineno;
 
   va_list ap;
   va_start(ap, s);
@@ -915,7 +932,7 @@ emit(char *s, ...)
 void
 yyerror(const char *s, ...)
 {
-  extern yylineno;
+  extern int yylineno;
 
   va_list ap;
   va_start(ap, s);
@@ -925,7 +942,7 @@ yyerror(const char *s, ...)
   fprintf(stderr, "\n");
 }
 
-main(int ac, char **av)
+int main(int ac, char **av)
 {
   extern FILE *yyin;
 

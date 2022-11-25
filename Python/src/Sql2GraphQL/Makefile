@@ -9,9 +9,7 @@ LEX = flex
 YACC = bison
 CFLAGS = -DYYDEBUG=1
 
-PROGRAMS9 = glrmysql
-
-all:	${PROGRAMS9}
+all:	 glrmysql
 
 
 glrmysql:	glrmysql.tab.o glrmysql.o
@@ -26,8 +24,8 @@ glrmysql.c:	glrmysql.l
 glrmysql.o:	glrmysql.c glrmysql.tab.h
 
 clean:
-	rm -f glrmysql glrmysql.tab.o glrmysql.o glrmysql.tab.c glrmysql.tab.h \
-	glrmysql.c glrmysql.output
+	rm -rf glrmysql glrmysql.tab.o glrmysql.o glrmysql.tab.c glrmysql.tab.h \
+	glrmysql.c glrmysql.output lpmysql.output pmysql.output
 
 .SUFFIXES:	.l .y .c
 
