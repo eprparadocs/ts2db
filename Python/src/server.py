@@ -56,20 +56,24 @@ def create_request(creq):
     what is being created.
     
     {
-      <operation>: {
+      "operation": <what-op>,
+      "request": {
       }
     }
     
-    <operation> is "table", for create a database table.
+    <what-op> is "table", for create a database table.
     """
     
     opstable = {"table":createdb}
-    if 'operation' not in creq:
+    jreq = json.loads(creq)
+    if 'operation' not in jreq:
         raise HTTPException(400, "Operation to perform is missing!")
-    op = creq["operation"]
+    op = jreq["operation"]
     if op not in opstable:
-        raise HTTPException(400, "Invalid operations '%s' specified!" % (op))
-    rc = opstable[op](creq)
+        raise HTTPException(400, "Invalid operations '%s' specified!" % (op))    
+    if 'request' not in jreq:
+        raise HTTPException(400, "Request data missing on create %s operation!" % (op))
+    rc = opstable[op](jreq["request"])
     return rc
 
 
