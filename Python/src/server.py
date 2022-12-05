@@ -5,10 +5,13 @@ This is the top of the TS2DB
 from enum import Enum
 import logging
 import asyncio
+import json
+
 
 from fastapi import FastAPI, HTTPException, Request
 import uvicorn
 
+from ts2db.database import createdb
 
 # Valid Logging Le(...,vel flags
 class LOGENUM(str, Enum):
@@ -45,13 +48,29 @@ def logout():
     return {"Hello": "logout"}
 
 
-@app.post("/graphQL",
-          description="Execute a GraphQL request.")
-def graphQL_request(gqlreq):
+@app.post("/create",
+          description="Create some resource, database etc..")
+def create_request(creq):
     """
-    Start all GraphQL operations here.
+    Input into this function is a JSON document that detauls exactly
+    what is being created.
+    
+    {
+      <operation>: {
+      }
+    }
+    
+    <operation> is "table", for create a database table.
     """
-    return {"Hello": "graphQL"}
+    
+    opstable = {"table":createdb}
+    if 'operation' not in creq:
+        raise HTTPException(400, "Operation to perform is missing!")
+    op = creq["operation"]
+    if op not in opstable:
+        raise HTTPException(400, "Invalid operations '%s' specified!" % (op))
+    rc = opstable[op](creq)
+    return rc
 
 
 @app.post("/sql",
