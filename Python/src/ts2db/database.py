@@ -14,9 +14,10 @@ The following files are part of a "database"
                         name is records.bz2
 """
 from os.path import join, exists
-from os import mkdir, getcwd, chdir
+from os import mkdir, getcwd, chdir, rmdir
 import bz2
 import json
+import shutil
 
 from user import User
 import exceptions
@@ -113,7 +114,7 @@ class DB:
                 raise exceptions.NameError("Column '%s' has illegal characters in the column name." % (i))
                 
         
-def createdb(crreq:dict, user:dict):
+def createdb(crreq:dict, user:User):
     """
     Input to this function is the following:
     
@@ -131,10 +132,35 @@ def createdb(crreq:dict, user:dict):
     We allow the following column types, though internally they are all kept as strings. When results
     are returned to the caller the strings will be returned as the proper type.
     """
-    db = DB(crreq, user)
+    DB(crreq, user)
+    
+
+def deletedb(dbname:str, user:User):
+    
+    # See if the database exists.
+    path = join(user.home, dbname)
+    if exists(path):
+        # REemove the "database!"
+        shutil.rmtree(path)
+
+
+def listTables(dbname:str, user:User):
+    
+    def enumerateDir():
+        return ""
+    
+    # Buidl the list of databases, just in case we haven't been given one.
+    dblist = [dbname] if dbname else enumerateDir(user.home)
+    answer = {}
+    for i in dblist:
+        path = join(user.home, i, 'info.json.bz2')
+        with bz2.open(path, 'rb', compresslevel=9) as fp:
+            info = json.loads(fp.read())
+            answer[i] = info['table']
+    return(answer)
+
     
 if __name__ == '__main__':
-    import shutil
     
     # Place all database tables in the subdirectory test. The
     # index files must be 10,000 bytes long.
@@ -200,7 +226,16 @@ if __name__ == '__main__':
             else:
                 print(e.args)
                 
+                
+    # Get the recorded information
+    table = listTables('TESTIT', user)
+    if not (table['TESTIT'] ==  tests['no error']['table']):
+        print('Table differences!')
+    else:
+        print('Tables match!')
+
     # Clean up test directory
-    shutil.rmtree("test")
+    deletedb("TESTIT", user)
+    rmdir("test")
     
     print("All tests complete")
