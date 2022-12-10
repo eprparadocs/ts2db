@@ -14,7 +14,7 @@ The following files are part of a "database"
                         name is records.bz2
 """
 from os.path import join, exists
-from os import mkdir, getcwd, chdir, rmdir
+from os import mkdir, getcwd, chdir, rmdir, walk
 import bz2
 import json
 import shutil
@@ -146,8 +146,13 @@ def deletedb(dbname:str, user:User):
 
 def listTables(dbname:str, user:User):
     
-    def enumerateDir():
-        return ""
+    def enumerateDir(path):
+        dirlist = []
+        for r,d,f in walk(path):
+            for dir in d:
+                dirlist.append(join(r,dir))
+        return dirlist
+                
     
     # Buidl the list of databases, just in case we haven't been given one.
     dblist = [dbname] if dbname else enumerateDir(user.home)
@@ -169,8 +174,10 @@ if __name__ == '__main__':
     user.idxsize = 10000
     
     # Make test database area..required for testing...
+    if exists('test'):
+        shutil.rmtree('test')
     mkdir('test')
-    
+
     # Various tests...
     tests = {}
     tests['name error'] = {
