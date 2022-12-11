@@ -144,7 +144,7 @@ def deletedb(dbname:str, user:User):
         shutil.rmtree(path)
 
 
-def listTables(dbname:str, user:User):
+def listTables(dbname:str|list, full:bool, user:User):
     
     def enumerateDir(path):
         dirlist = []
@@ -155,13 +155,20 @@ def listTables(dbname:str, user:User):
                 
     
     # Buidl the list of databases, just in case we haven't been given one.
-    dblist = [dbname] if dbname else enumerateDir(user.home)
-    answer = {}
+    if dbname and isinstance(dbname, str) :
+        dbname = [dbname]
+        
+    dblist = dbname if dbname else enumerateDir(user.home)
+    answer = {} if full else []
     for i in dblist:
         path = join(user.home, i, 'info.json.bz2')
-        with bz2.open(path, 'rb', compresslevel=9) as fp:
-            info = json.loads(fp.read())
-            answer[i] = info['table']
+        if exists(path):
+            if not full:
+                answer.append(i)
+            else:
+                with bz2.open(path, 'rb', compresslevel=9) as fp:
+                    info = json.loads(fp.read())
+                    answer[i] = info['table']
     return(answer)
 
     
