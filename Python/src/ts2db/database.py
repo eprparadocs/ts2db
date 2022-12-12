@@ -13,8 +13,8 @@ The following files are part of a "database"
          record talbe - the file that holds the records of the database. Actual
                         name is records.bz2
 """
-from os.path import join, exists
-from os import mkdir, getcwd, chdir, rmdir, walk, listdir
+from os.path import join, exists, getsize
+from os import mkdir, rmdir, walk, listdir
 import bz2
 import json
 import shutil
@@ -179,12 +179,33 @@ class TABLEDEF:
     name = property(get_name)
 
 
+class PERCONNECT:
+    def __init__(self, name:str, tbl:TABLEDEF):
+        self._name = name
+        self._tabledef = tbl
+        
+    def get_name(self):
+        return self._name
+    def set_name(self, name):
+        self._name = name
+    name = property(get_name, set_name)
+    
+    def get_def(self):
+        return self._tabledef
+    def set_def(self, tbldef):
+        self._tabledef = tbldef
+    tabledef = property(get_def, set_def)
+    
+    
 class Table:
     """
-    Create/Delete a table in the database
+    Create/Delete/Open a table in the database
     
     Methods:
-    Table(DB, TABLEDEF, opts) - Create the table in the database
+           Table(DB, opts) - Setup a database
+    create(name, TABLEDEF) - create a new table in the database
+             connect(name) - Connect a known table in the database
+              delete(name) - Delete a table from the database
     
     Attributes:
                          opts - get per database options
@@ -195,46 +216,76 @@ class Table:
                        tbldir - where is the table information stored
     
     """
-    def __init__(self, db:DB, table:TABLEDEF, dbopts:dict|None = None):
-        self._db = db
-        self._name = self._cols = self._dbdir = None
-        self._dbopts = db.opts | dbopts
-        self._name = table.name
-        self._cols = table.table
         
+    def __init__(self, db:DB, dbopts:dict|None = None):
+        self._db = db
+        self._dbopts = db.opts | dbopts
+        self._connectDict = {}
+        
+    def get_opts(self):
+        return self._dbopts
+    opts = property(get_opts)
+    
+    def get_db(self):
+        return self._db
+    db = property(get_db)
+    
+    def create(self, name:str, table:TABLEDEF):
+        """
+        Create a new table in the database.
+        """
+        
+        # Create the per-connect structure
+        tblcnt = PERCONNECT(name, table)
+         
         # Make certian the table doesn't already exist
-        path = join(self.db.path, table.name)
+        path = join(self.db.path, name)
         if exists(path):
             raise exceptions.TableError("Table '%s' already exists!" % (table._name))
         
         # Make the database table
         self.make()
         
-    def get_opts(self):
-        return self._dbopts
-    opts = property(get_opts)
+        # Tables exists. add ot tp tje cpmmectopm table
+        self._connectDict = {name:tblcnt}
     
-    def get_cols(self):
-        return self._cols
-    cols = property(get_cols)
+    def _isEmpty(self, name:str):
+        path = join(self.db.path, name, "records.dat")
+        return getsize(path) == 0
     
-    def get_name(self):
-        return self._name
-    def set_name(self, name):
-        self._name = name
-    name = property(get_name, set_name)
+    def delete(self, name:str, iffull:bool):
+        """
+        Delete a table in the database.
+        """
+        # Do we delete unconditionally?
+        if iffull or self._isEmpty(name):
+            # Yes, delete everything.
+            path = join(self.db.path, name)
+            if exists(path):
+                # Remove the all the table information
+                shutil.rmtree(path)
+                
+                # Remove the information from the connection table.
+                del self._connectDict[name]
+            else:
+                raise exceptions.TableError("'%s' doesn't exist.")
     
-    def get_db(self):
-        return self._db
-    db = property(get_db)
-    
-    def get_dbdir(self):
-        return self._db.path
-    dbdir = property(get_dbdir)
-        
-    def get_tbldir(self):
-        return self._tbldir
-    tbldir = property(get_tbldir)
+    def connect(self, name:str):
+        """
+        Connect a known table to this database instance.
+        """
+        # Makw certain we don't know about the table.
+        if name not in self._connectDict:
+            # Make certain we have a "real" table already defined
+            path = join(self.db.path, name)
+            if exists(path):
+                # We have a real table!
+                with bz2.open(join(path, "info.json.bz2"), "rb", compresslevel=9) as fp:
+                    info = json.loads(fp.read())
+                    perc = PERCONNECT(name, info)
+                    self._connectDict = {name:perc}
+            else:
+                raise exceptions.TabkeError("'%s' doesn't exist." % (name))
     
     def make(self):
         """
