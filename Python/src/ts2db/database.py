@@ -233,6 +233,17 @@ class Table:
     def create(self, name:str, table:TABLEDEF):
         """
         Create a new table in the database.
+        
+        Input:
+          name - name of table to create
+         table - definition of table
+                 
+        Return:
+        None
+        
+        Exceptions:
+        TableError - excepti0on thrown if table exists.
+
         """
         
         # Create the per-connect structure
@@ -256,6 +267,17 @@ class Table:
     def delete(self, name:str, iffull:bool):
         """
         Delete a table in the database.
+        
+        Input:
+          name - name of table to delete
+        iffull - True, delete even if table has content
+                 False, delete only if table is empty
+                 
+        Return:
+        None
+        
+        Exceptions:
+        TableError - excepti0on thrown if table doesn't exist.
         """
         # Do we delete unconditionally?
         if iffull or self._isEmpty(name):
@@ -273,6 +295,16 @@ class Table:
     def connect(self, name:str):
         """
         Connect a known table to this database instance.
+        
+        Input:
+          name - name of table to delete
+                 
+        Return:
+        None
+        
+        Exceptions:
+        TableError - excepti0on thrown if table doesn't exist.
+
         """
         # Makw certain we don't know about the table.
         if name not in self._connectDict:
