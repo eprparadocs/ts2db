@@ -206,6 +206,7 @@ class Table:
     create(name, TABLEDEF) - create a new table in the database
              connect(name) - Connect a known table in the database
               delete(name) - Delete a table from the database
+              execute(pgm) - Execute, in parallel, the 'pgm' against the database
     
     Attributes:
                          opts - get per database options
@@ -318,6 +319,39 @@ class Table:
                     self._connectDict = {name:perc}
             else:
                 raise exceptions.TabkeError("'%s' doesn't exist." % (name))
+            
+    def execute(self, pgm:list):
+        """
+        Execute a pgm against the database.
+        
+        A program consists of a number of steps, some executed in parallel and others sequentiually.
+        The parallel components all are about accessing the indices and dealing with them. Others,
+        follow after the indices have been processed and generate some results.
+        
+        Parallel steps are writen:
+        
+                   parallel "stepname" "operation"
+                   
+        Sequential steps are written
+        
+                   sequential "stepname" ["wait-on steps"]  "operation"
+                   
+        "Stepnames" are alnum with no spaces or special characters.
+        "wait-on steps" is one or more stepname operations that must complete 
+                   before this sequential operation performed.
+        "operation" is what is to be done; TBD.
+         
+        Input:
+          pgm - Lisd of steps to execute against the database
+                 
+        Return:
+        
+        
+        Exceptions:
+
+        """
+        pass
+    
     
     def make(self):
         """
