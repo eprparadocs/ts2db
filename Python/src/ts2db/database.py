@@ -21,6 +21,7 @@ import shutil
 
 from user import User
 import exceptions
+from pgm import Dispatch, Complete
 
 class DB:
     """
@@ -256,7 +257,7 @@ class Table:
             raise exceptions.TableError("Table '%s' already exists!" % (table._name))
         
         # Make the database table
-        self.make()
+        self.make(name, table)
         
         # Tables exists. add ot tp tje cpmmectopm table
         self._connectDict = {name:tblcnt}
@@ -320,55 +321,38 @@ class Table:
             else:
                 raise exceptions.TabkeError("'%s' doesn't exist." % (name))
             
-    def execute(self, pgm:list):
+    def execute(self, ppgm:list, common:list):
         """
         Execute a pgm against the database.
         
-        A program consists of a number of steps, some executed in parallel and others sequentiually.
-        The parallel components all are about accessing the indices and dealing with them. Others,
-        follow after the indices have been processed and generate some results.
+        A "program" consists of two distinct steps. First, there are parallel tracks that
+        are usually against the various indices. Once all these are complete, the common
+        program is run. This usually takes all the results from the various parallel tracks
+        and operates on them. 
         
-        Parallel steps are writen:
-        
-                   parallel "stepname" "operation"
-                   
-        Sequential steps are written
-        
-                   sequential "stepname" ["wait-on steps"]  "operation"
-                   
-        "Stepnames" are alnum with no spaces or special characters.
-        "wait-on steps" is one or more stepname operations that must complete 
-                   before this sequential operation performed.
-        "operation" is what is to be done; TBD.
-         
-        Input:
-          pgm - Lisd of steps to execute against the database
-                 
-        Return:
-        
-        
-        Exceptions:
-
+        The common thread will take the results of the various parallel threadss and combine
+        them into a result.
         """
-        pass
+        
+        return( Complete(common, Dispatch(ppgm)))
+
     
-    
-    def make(self):
+    def make(self, name):
         """
         Make the root directory of this database. This is the where all 
         the table definitions are stored. Every file in the database 
         directory is compressed.
         """
-        self._tbldir = join(self._db.path, self._name)
-        mkdir(self._dbdir)
+        self._tbldir = join(self._db.path, name)
+        mkdir(self._tbldir)
     
         """
         This is the schema of the database. It includes all sorts of information
         besides just the compressed JSON description of the table. 
         """
         # Build the JSON structure we will write out
-        j = {'table': self._cols}
-        j['name'] = self._name
+        j = {'table': table.table}
+        j['name'] = name
         j['opts'] = self._dbopts
         with bz2.open(join(self._tbldir, "info.json.bz2"), "wb", compresslevel=9) as fp:
             fp.write(json.dumps(j).encode('utf-8'))
@@ -392,7 +376,7 @@ class Table:
         of the record. This second tier is real a B-Tree with the key being the index value from 
         the first tier.
         """        
-        for i in self.cols.keys():
+        for i in table.table.keys():
             # Preallocate the index files. We do this to make certain that we can map each index
             # file into the memory map.
             with open(join(self._tbldir, i+'.idx'),'wb') as fp:
